@@ -3,6 +3,7 @@ import "dotenv/config";
 import contactRouter from "./routes/contactRouter.js";
 import errorHandler from "./middleware/errorHandler.js";
 import connectDB from "./config/db.js";
+import userRouter from "./routes/userRoute.js";
 
 //connect database
 connectDB();
@@ -13,6 +14,7 @@ const port = process.env.PORT || 5000;
 app.use(express.json());
 //api endpoints
 app.use("/api/contacts", contactRouter);
+app.use("api/users", userRouter);
 
 //middleware error handler
 app.use(errorHandler);

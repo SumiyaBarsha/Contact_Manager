@@ -1,6 +1,5 @@
 import asyncHandler from "express-async-handler";
 import contactModel from "../models/contactModel.js";
-import { RedoTwoTone } from "@material-ui/icons";
 //get all contacts
 const getContact = asyncHandler(async (req,res)=>{
     try{
