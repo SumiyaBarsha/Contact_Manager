@@ -5,29 +5,52 @@ import bcrypt from "bcryptjs";
 import validator from 'validator';
 
 //ACCESS token generate
-const generateAccessToken = (id) =>{
-    return jwt.sign({id},process.env.JWT_ACCESS_SECRET,{expiresIn: "15m"});
+const generateAccessToken = (userId) =>{
+    return jwt.sign({id: userId},process.env.JWT_ACCESS_SECRET,{expiresIn: "15m"});
 }
 
 //Refresh token generate
-const generateRefreshToken = (id) =>{
-    return jwt.sign({id},process.env.JWT_REFRESH_SECRET,{expiresIn: "7d"});
+const generateRefreshToken = (userId) =>{
+    return jwt.sign({id: userId},process.env.JWT_REFRESH_SECRET,{expiresIn: "7d"});
 }
 
-//verify access token
-const verifyAccessToken = (token) =>{
-    return jwt.verify(token,process.env.JWT_ACCESS_SECRET);
-}
-//verify refresh token
-const verifyRefreshToken = (token) =>{
-    return jwt.verify(token,process.env.JWT_REFRESH_SECRET);
-}
+// send tokens (access → in body, refresh → cookie + body)
+const sendTokens = (res, user) => {
+  const accessToken = generateAccessToken(user._id);
+  const refreshToken = generateRefreshToken(user._id);
 
-// Store refresh tokens (in production, use Redis or database)
-let refreshTokens = [];
+  // If you use cookie-parser in app.js, this will work:
+  // app.use(cookieParser());
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    //secure: process.env.NODE_ENV === "production", // send over https in prod
+    sameSite: "strict",
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7d
+  });
+
+  return {
+    accessToken,
+    refreshToken,
+  };
+};
+
+// for consistent user payload (never send password)
+const userToClient = (user) => ({
+  _id: user._id,
+  name: user.name,
+  email: user.email,
+  role: user.role,
+});
+
 
 const registerUser = asyncHandler(async (req,res)=>{
     const {username,email,password} = req.body;
+    // basic checks
+    if (!username || !email || !password) {
+        return res
+        .status(400)
+        .json({ success: false, message: "Name, email & password are required." });
+    }
     try{
         const existUser = await userModel.findOne({email});
         if(existUser){
@@ -51,19 +74,9 @@ const registerUser = asyncHandler(async (req,res)=>{
             password: hashedPass
         });
         const registeredUser = await newUser.save();
-        //generate access & refresh token
-        const accessToken = generateAccessToken(registeredUser._id);
-        const refreshToken = generateRefreshToken(registeredUser._id);
-        //store it in database
-        refreshTokens.push(refreshToken); 
-        //set refresh token as HTTP-ONLY cookie
-        res.cookie('refreshToken', refreshToken, {
-            httpOnly: true,
-            sameSite: 'strict',
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-        });
-        
-        res.status(201).json({sucess:true, message:"Registered Successfully!",data: registeredUser,accessToken});
+        // generate & send tokens
+        const { accessToken, refreshToken } = sendTokens(res, user);
+        res.status(201).json({sucess:true, message:"Registered Successfully!",data: userToClient(registeredUser),accessToken,refreshToken});
     }catch(err){
         console.log(err);
         res.status(500).json({success:false, message:"Error Creating User!"});
@@ -72,6 +85,12 @@ const registerUser = asyncHandler(async (req,res)=>{
 
 const loginUser = asyncHandler(async (req,res)=>{
     const{email,password} = req.body;
+    // basic check
+    if (!email || !password) {
+        return res
+        .status(400)
+        .json({ success: false, message: "Email & password are required." });
+    }
     try{
         const user = await userModel.findOne({email});
         if(!user){
@@ -81,8 +100,9 @@ const loginUser = asyncHandler(async (req,res)=>{
         if(!matchPass){
             res.status(401).json({success:false, message:"Wrong Credentials!"});
         }
-
-        res.status(200).json({sucess:true, message:"Logged In Successfully!",data: user});
+        // generate & send tokens
+        const { accessToken, refreshToken } = sendTokens(res, user);
+        res.status(200).json({sucess:true, message:"Logged In Successfully!",data: userToClient(user), accessToken,refreshToken});
 
     }catch(err){
         console.log(err);
@@ -90,4 +110,39 @@ const loginUser = asyncHandler(async (req,res)=>{
     }
 });
 
-export {registerUser,loginUser};
+//refreshing access token
+const refreshAccessToken = asyncHandler(async (req,res) =>{
+    // try cookie first, then body (to support mobile/postman)
+    const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken || null;
+
+    if(!refreshToken){
+        return res.status(401).json({ success: false, message: "Refresh token missing." });
+    }
+
+    try{
+        const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+        //check if user still exists
+        const user = await userModel.findById(decoded._id);
+        if(!user){
+            return res.status(401).json({ success: false, message: "User no longer exists." });
+        }
+        const newAccessToken = generateAccessToken(user._id);
+        return res.status(200).json({success: true,accessToken: newAccessToken,});
+
+    }catch(err){
+        console.error("Refresh token error:", err.message);
+    return res.status(401).json({ success: false, message: "Invalid or expired refresh token." });
+  }
+});
+
+//logout
+const logoutUser = asyncHandler(async(req,res)=>{
+    res.clearCookie("refreshToken",{
+        httpOnly: true,
+        sameSite: "strict",
+        //secure: process.env.NODE_ENV === "production",
+    });
+    return res.status(200).json({success: true,message: "Logged out successfully."});
+});
+
+export {registerUser,loginUser, refreshAccessToken, logoutUser};
