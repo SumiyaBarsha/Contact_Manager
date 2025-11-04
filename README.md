@@ -1,32 +1,32 @@
-#📇 MyContacts Backend API
+# 📇 MyContacts Backend API
 
 A Node.js + Express.js RESTful API for managing user accounts and contacts, featuring JWT-based authentication, refresh tokens, MongoDB (Mongoose) for database operations, and robust error handling middleware.
 
-##🚀 Features
+## 🚀 Features
 
-###🔐 User Authentication System
+### 🔐 User Authentication System
 
 - Register, login, logout
 - Access & refresh token support
 - Protected routes with middleware
 
-###👥 Contact Management
+### 👥 Contact Management
 - Create, read, update, and delete contacts
 - Each contact associated with a logged-in user
 - Full CRUD operations secured by JWT
 
-###⚙️ API Design
+### ⚙️ API Design
 - Modular routes, controllers, and middleware
 - Global error handler
 - Asynchronous operations using express-async-handler
 
-###🧱 Tech Stack
+### 🧱 Tech Stack
 - Node.js + Express.js
 - MongoDB + Mongoose
 - JWT Authentication
 - dotenv 
 
-###🧩 API Endpoints
+### 🧩 API Endpoints
 Auth Routes
 Method	Endpoint
 POST	  /api/users/register	
