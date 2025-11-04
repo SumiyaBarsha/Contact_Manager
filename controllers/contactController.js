@@ -3,7 +3,7 @@ import contactModel from "../models/contactModel.js";
 //get all contacts
 const getContact = asyncHandler(async (req,res)=>{
     try{
-        const contacts = await contactModel.find({});
+        const contacts = await contactModel.find({user_id: req.user.id});
         res.json({sucess: true, message: "Fetched All Contacts!",data: contacts});
     }catch(err){
         console.log(err);
@@ -20,6 +20,7 @@ const createContact = asyncHandler (async (req,res)=>{
         name: req.body.name,
         email: req.body.email,
         mobile: req.body.mobile,
+        user_id: req.user.id
     });
     try{
         const savedContact = await newContact.save();

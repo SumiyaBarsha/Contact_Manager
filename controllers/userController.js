@@ -6,7 +6,7 @@ import validator from 'validator';
 
 //ACCESS token generate
 const generateAccessToken = (userId) =>{
-    return jwt.sign({id: userId},process.env.JWT_ACCESS_SECRET,{expiresIn: "15m"});
+    return jwt.sign({id: userId},process.env.JWT_ACCESS_SECRET,{expiresIn: "60m"});
 }
 
 //Refresh token generate
@@ -75,7 +75,7 @@ const registerUser = asyncHandler(async (req,res)=>{
         });
         const registeredUser = await newUser.save();
         // generate & send tokens
-        const { accessToken, refreshToken } = sendTokens(res, user);
+        const { accessToken, refreshToken } = sendTokens(res, registeredUser);
         res.status(201).json({sucess:true, message:"Registered Successfully!",data: userToClient(registeredUser),accessToken,refreshToken});
     }catch(err){
         console.log(err);
@@ -135,6 +135,12 @@ const refreshAccessToken = asyncHandler(async (req,res) =>{
   }
 });
 
+//current user
+const currentUser = asyncHandler(async(req,res)=>{
+    return res.status(200).json({success: true,user: req.user});
+});
+
+
 //logout
 const logoutUser = asyncHandler(async(req,res)=>{
     res.clearCookie("refreshToken",{
@@ -145,4 +151,4 @@ const logoutUser = asyncHandler(async(req,res)=>{
     return res.status(200).json({success: true,message: "Logged out successfully."});
 });
 
-export {registerUser,loginUser, refreshAccessToken, logoutUser};
+export {registerUser,loginUser,currentUser, refreshAccessToken, logoutUser};
