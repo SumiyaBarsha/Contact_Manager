@@ -28,16 +28,16 @@ A Node.js + Express.js RESTful API for managing user accounts and contacts, feat
 
 ### 🧩 API Endpoints
 #### Auth Routes
-- POST	  /api/users/register	
-- POST	  /api/users/login	
-- POST	  /api/users/refresh	
-- POST	  /api/users/logout	
-- GET	    /api/users/current	
+- POST	➡️  /api/users/register	
+- POST	➡️  /api/users/login	
+- POST	➡️  /api/users/refresh	
+- POST	➡️  /api/users/logout	
+- GET	  ➡️  /api/users/current	
 
 
 #### Contact Routes
-- POST	  /api/contacts/create	
-- GET	    /api/contacts/
-- GET     /api/contacts/:id
-- PUT	    /api/contacts/update/:id	
-- DELETE	/api/contacts/delete/:id	
+- POST	 ➡️  /api/contacts/create	
+- GET	   ➡️  /api/contacts/
+- GET    ➡️  /api/contacts/:id
+- PUT	   ➡️  /api/contacts/update/:id	
+- DELETE ➡️  /api/contacts/delete/:id	
